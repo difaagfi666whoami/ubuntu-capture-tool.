@@ -41,7 +41,7 @@ The currently declared target is Ubuntu 24.04.4 LTS, GNOME, Wayland (from the pr
 
 ## Current implementation
 
-The current application includes local vertical/horizontal image composition, ordered image selection, alignment, preview, and PNG export. Area capture uses GNOME's XDG screenshot portal for a desktop image, then selects/crops the saved rectangle locally. The portal path is an implementation candidate and still needs manual validation on the Ubuntu target; mocked tests do not prove desktop compatibility.
+The current application includes local vertical/horizontal image composition, ordered image selection, alignment, preview, and PNG export. Area capture asks GNOME's XDG screenshot portal to open its interactive screenshot UI; the selected screenshot returned by GNOME is saved directly. The portal path still needs manual validation on the Ubuntu target; mocked tests do not prove desktop compatibility.
 
 ## Setup and run
 
@@ -85,7 +85,7 @@ python -m pip install .
 ubuntu-capture-tool
 ```
 
-These are setup instructions for the Ubuntu target. On GNOME Wayland the app calls the XDG screenshot portal, which can request permission to provide a full-screen image. The app temporarily reads that image, lets you select/crop the saved region locally, and removes the portal-produced full-screen file after reading it. Only the selected crop is written to the chosen capture folder. Portal permission and actual screenshot behavior must be checked on the target PC.
+These are setup instructions for the Ubuntu target. On GNOME Wayland the app requests an interactive screenshot from the XDG screenshot portal. GNOME displays its screenshot UI; the user chooses a selection, drags over the desired area, and confirms. The portal returns the selected screenshot, which the app saves to the chosen capture folder. This interactive flow must be checked on the target PC.
 
 ### Ubuntu test run
 
@@ -114,26 +114,26 @@ The composition canvas fills unused space with white. Images keep their original
 
 ## Using area capture (experimental)
 
-Area capture uses the XDG Desktop Portal rather than GNOME Shell's restricted private screenshot D-Bus methods. The portal returns a full-screen image after its permission flow; the app then displays that image for selecting an area. The rectangle is saved in image-pixel coordinates, and later captures reuse it without asking you to resize it. The full-screen portal file is removed after it is read; the output folder receives only the cropped PNG.
+Area capture uses GNOME's interactive XDG Screenshot Portal instead of GNOME Shell's restricted private screenshot D-Bus methods. It does not take a silent full-screen screenshot and then ask you to crop it in the app.
 
-1. Open **Area capture** and choose **Select area**. Approve the GNOME screenshot permission prompt if shown. The app minimizes while the desktop image is taken, then opens a local area picker over the image.
-2. Drag over the desired rectangle and choose **Use area**. Its coordinates and dimensions are saved in `~/.config/ubuntu-capture-tool/capture-geometry.json`. You can edit X, Y, Width, and Height before capturing.
-3. Choose **Capture saved area** to request another desktop image and crop the saved rectangle. If screen dimensions or layout changed, select a new area.
-4. Cropped captures are written as uniquely named PNG files in `~/Pictures` (or the home folder if Pictures does not exist). Choose another folder with **Choose folder**.
-5. Cancel either the portal permission request or local area picker to return without creating an output capture. If the saved rectangle no longer fits the image, the app reports an error and asks you to select again.
+1. Open **Area capture** and choose **Select area**.
+2. In GNOME's screenshot UI, choose **Selection** (if a mode chooser appears), drag over the area, then confirm the screenshot.
+3. The selected-area PNG is saved with a unique filename in `~/Pictures` (or the home folder if Pictures does not exist). Choose another folder with **Choose folder**.
+4. Cancel GNOME's screenshot UI to return without creating a file.
+
+GNOME controls the selection overlay. The portal does not let this app set the overlay's initial rectangle size or position, so every capture uses GNOME's normal interactive selection. The older private GNOME `SelectArea` method returned `AccessDenied` on Ubuntu 24.04.4 / GNOME 46 / Wayland. Do not claim compatibility until the interactive portal flow and saved output are checked on that target.
 
 ### Ubuntu desktop validation still required
 
 The project maintainer must verify on the actual Ubuntu PC:
 
 - Record `lsb_release -ds`, `gnome-shell --version`, `echo "$XDG_CURRENT_DESKTOP"`, and `echo "$XDG_SESSION_TYPE"`.
-- Approve the portal request, select and capture a known small area; confirm the image opens and has the expected content and dimensions. Confirm only the cropped image is left in the chosen output folder.
-- Restart the app; confirm the prior coordinates and dimensions are restored.
-- Capture the same saved rectangle twice; confirm both outputs are valid and have different filenames.
-- Cancel the area selector and confirm no screenshot file appears.
-- Try an invalid or out-of-bounds rectangle; confirm an actionable error appears and no partial output is left.
+- Launch **Select area**; confirm GNOME's interactive screenshot UI appears. Choose **Selection**, drag over a known small region, and confirm.
+- Open the saved PNG; confirm it contains only the selected region and has the expected dimensions.
+- Capture another area and confirm the output uses a different filename.
+- Cancel GNOME's screenshot UI and confirm no new capture file appears.
 
-GNOME restricts access to its private Shell screenshot interface. The app now uses the [XDG Desktop Portal Screenshot API](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html) to obtain a full-screen image after the desktop permission flow, then selects and crops the requested rectangle locally. This preserves saved-rectangle reuse, but means the app temporarily receives the whole screen image. Do not claim compatibility until the portal permission, cancellation, crop, persistence, and repeated-capture checks pass on Ubuntu 24.04.4 GNOME Wayland.
+GNOME restricts access to its private Shell screenshot interface. The app now uses the [XDG Desktop Portal Screenshot API](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html) in interactive mode and saves the selected image returned by GNOME. Do not claim compatibility until selection, cancellation, and output checks pass on Ubuntu 24.04.4 GNOME Wayland.
 
 ## Uninstall
 

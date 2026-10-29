@@ -3,11 +3,11 @@
 Check items only after testing and recording evidence.
 
 ## Area capture
-Capture code is implemented behind the platform backend interface, but the GNOME backend remains experimental. Do not check these criteria until the actual Ubuntu desktop checks in README.md pass.
+Capture code uses GNOME's interactive screenshot portal and remains experimental until the actual Ubuntu desktop checks in README.md pass. The portal owns the selection UI and does not expose saved rectangle coordinates to the app.
 - [ ] AC-CAP-01: Capture can be invoked from the app.
 - [ ] AC-CAP-02: Image is saved successfully.
-- [ ] AC-CAP-03: Last width/height persist after restart.
-- [ ] AC-CAP-04: On declared supported environment, next selection uses previous dimensions without manual resizing.
+- [ ] AC-CAP-03: Last width/height persist after restart (not implemented in the portal flow).
+- [ ] AC-CAP-04: On declared supported environment, next selection uses previous dimensions without manual resizing (not supported by the current portal API flow).
 - [ ] AC-CAP-05: User can move/resize rectangle where backend supports it.
 - [ ] AC-CAP-06: Cancel creates no file.
 - [ ] AC-CAP-07: Invalid/out-of-bounds geometry recovers safely.

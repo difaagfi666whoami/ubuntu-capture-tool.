@@ -5,7 +5,7 @@ Statuses: TODO / IN PROGRESS / BLOCKED / DONE
 ## Phase 0 — Environment and feasibility
 - [x] P0.1 Record available environment details (target confirmed by user on 2026-10-29).
 - [ ] P0.2 Test the XDG Desktop Portal backend on the actual Ubuntu session. The earlier GNOME Shell D-Bus backend was rejected with `AccessDenied` (user report, 2026-10-29).
-- [ ] P0.3 Verify saved rectangle selection and local crop can be reused on the actual session. PENDING portal capture test.
+- [ ] P0.3 Verify GNOME's interactive area selection returns an area-only PNG on the actual session.
 - [x] P0.4 Record findings and the provisional decision: implement the user-approved GNOME candidate, but do not claim support until P0.2/P0.3 pass.
 
 ### Phase 0 evidence (2026-10-29)
@@ -22,10 +22,11 @@ Statuses: TODO / IN PROGRESS / BLOCKED / DONE
 - The user tested the installed app on their Ubuntu PC. Clicking **Select area** returned `GDBus.Error:org.freedesktop.DBus.Error.AccessDenied: SelectArea is not allowed`.
 - The user confirmed the target session details: Ubuntu 24.04.4 LTS, GNOME Shell 46.0, Ubuntu GNOME, Wayland.
 - Do not count the capture backend as working or compatible. The documented XDG Desktop Portal Screenshot API supports a user-selected Area target but does not expose rectangle coordinates for saved-region reuse.
-- The user chose to preserve the original saved-area workflow. The replacement candidate requests a full-screen image through the XDG Desktop Portal, then uses a local rectangle picker and crops locally. Its temporary full-screen image is removed after reading. The app stores the crop, not the uncropped image, in the selected capture folder.
-- Target verification remains required for portal consent, cancellation, output cleanup, image-coordinate mapping, persistence, and repeated capture. Keep capture acceptance criteria open until these checks pass.
+- The first portal replacement used `interactive=false`, which returns the entire screen and led to confusing behavior. The revised flow uses GNOME's interactive screenshot UI and saves the selected image returned by GNOME directly.
+- The app no longer shows a separate local picker or geometry editor. GNOME's UI owns area selection. The portal does not let this app prefill or reuse the exact selection rectangle.
+- Target verification remains required for GNOME's selection overlay, area-only output, cancellation, and repeated output naming. Keep capture acceptance criteria open until these checks pass.
 
-Exit condition: user approval allows the experimental candidate UI; target compatibility remains gated on P0.2/P0.3.
+Exit condition: target compatibility remains gated on P0.2/P0.3.
 
 ## Phase 1 — Foundation
 - [x] P1.1 Create project structure and dependency manifest.
@@ -43,9 +44,9 @@ Exit condition: user approval allows the experimental candidate UI; target compa
 
 ## Phase 3 — Persistent area capture
 - [x] P3.1 Define platform-neutral capture backend interface contract.
-- [x] P3.2 Implement XDG Desktop Portal full-screen capture behind the interface and local rectangle selection/cropping; target validation remains pending.
-- [x] P3.3 Implement XDG geometry persistence and load it in the capture UI.
-- [x] P3.4 Handle area-selection cancellation, invalid geometry errors, unique naming, and safe local output.
+- [x] P3.2 Implement interactive XDG Desktop Portal capture and save its returned image; target validation remains pending.
+- [ ] P3.3 Reuse a saved rectangle size. The portal flow does not expose a prefilled selection rectangle.
+- [x] P3.4 Handle portal cancellation, unique naming, and safe local output.
 - [ ] P3.5 Manually test on target session.
 - [ ] P3.6 Verify AC-CAP criteria.
 
@@ -62,16 +63,17 @@ Exit condition: user approval allows the experimental candidate UI; target compa
 - 2026-10-29: Added Python package, local image combiner, capture interface contract, validated XDG geometry store, setup instructions, and unit tests. macOS test suite: 19 passed; PySide6 window and entry point smoke checks passed; editable package dry-run passed. Ubuntu runtime and desktop integration have not been tested.
 - 2026-10-29: Added experimental GNOME Shell area capture tab/backend, cancellation and output handling, plus mocked backend/UI tests. User reports that the image combiner works on the Ubuntu PC; capture integration is not yet tested there.
 - 2026-10-29: User confirmed Ubuntu 24.04.4 LTS, GNOME Shell 46.0, Wayland. The private GNOME Shell `SelectArea` D-Bus method returned `AccessDenied`. Replaced that candidate with XDG Portal full-screen capture plus a local selector/crop flow to preserve saved rectangle reuse; Ubuntu portal integration testing is still pending.
+- 2026-10-29: User reported that the portal replacement showed no area selection and produced a full-screen image. The cause was `interactive=false`. Switched to GNOME's interactive screenshot UI, removed the separate local picker and geometry controls, and saves the selected image returned by the portal directly. Ubuntu retest is pending.
 
 ## Implementation validation evidence
-- `PYTHONPATH=src python3 -m pytest -q`: 29 passed on macOS 26.6.2, Python 3.13.14, Pillow 12.3.0, PySide6 6.11.1.
+- Earlier unit-test runs are historical evidence only; see the latest run below after the interactive portal change.
 - `python3 -m compileall -q src tests`: passed.
 - Offscreen PySide6 `MainWindow()` startup smoke check: passed; this checks widget construction only, not screenshot support or Ubuntu compatibility.
 - PySide6 UI tests cover multi-file selection handling, reordering, preview updates, useful invalid-input feedback, PNG export, explicit overwrite confirmation, and source-file protection.
 - Merge unit tests cover vertical/horizontal order and dimensions, start/center/end alignment, invalid input, PNG output, overwrite refusal, atomic output replacement, and source-file preservation.
-- Geometry-store tests cover XDG config path selection, round-trip persistence, and safe handling of corrupt or invalid saved values. Negative x/y coordinates remain valid for multi-monitor layouts; screen bounds are backend-specific and still need target validation.
-- Unit tests cover local crop dimensions and bounds, saved geometry across panel recreation, cancellation, local PNG output, and safe errors. They do not demonstrate portal or real GNOME compatibility.
-- Remaining: install the portal-backed update on Ubuntu; manually test consent, selector, cancel, full-screen temporary-file cleanup, output crop, geometry persistence after restart, repeated capture with unique filenames, and invalid/out-of-bounds recovery. Then record actual results and revisit capture acceptance criteria.
+- UI tests cover direct saving of the image returned by the portal, cancellation, and safe errors. Portal tests assert that the request is interactive and verify temporary-file cleanup. They do not demonstrate real GNOME compatibility.
+- Latest unit-test result: `python3 -m pytest -q`: 20 passed after simplifying area capture to GNOME's interactive screenshot UI.
+- Remaining: install the interactive portal update on Ubuntu; confirm GNOME's selection UI appears, returns area-only output, supports cancellation, and saves unique files. Then record actual results and revisit capture acceptance criteria.
 
 ## Decisions
 - D-001: MVP limited to persistent area capture and vertical/horizontal image merge.

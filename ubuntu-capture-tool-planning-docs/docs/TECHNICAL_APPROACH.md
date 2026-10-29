@@ -10,13 +10,13 @@ This stack is proposed, not final. Keep dependencies modest.
 
 ## Suggested structure
 - `ui/`: main window and merge/capture screens
-- `capture/`: backend interface, environment detection, geometry persistence
+- `capture/`: portal backend and local output handling
 - `image_merge/`: image validation, composition, export
 - `settings/`: local settings under XDG config directory
-- `tests/`: merge and settings/geometry tests
+- `tests/`: image merge and capture workflow tests
 
 Image merge must work independently of the screenshot backend.
-The platform-neutral capture contract lives in `src/ubuntu_capture_tool/capture/backend.py`. It selects a rectangle and captures it as PNG bytes. The experimental GNOME Shell implementation is isolated in `src/ubuntu_capture_tool/capture/gnome_shell.py`; the UI is in `src/ubuntu_capture_tool/capture/ui.py`. `src/ubuntu_capture_tool/settings/geometry_store.py` atomically stores validated geometry under the XDG config directory. The implementation is ready for target testing, but is not declared Ubuntu-compatible until the actual session checks pass.
+The capture contract lives in `src/ubuntu_capture_tool/capture/backend.py`. The XDG portal backend asks GNOME to show its interactive screenshot UI and returns the selected PNG. The UI saves that PNG directly. This avoids calling GNOME Shell's restricted private screenshot method and avoids presenting a separate app-owned crop window.
 
 ## Cross-platform development and validation
 macOS is a development host; Ubuntu is the target runtime. Do not use macOS behavior as evidence for Ubuntu support.
@@ -43,33 +43,30 @@ The project README records the intended test target as Ubuntu 24.04.4 LTS, GNOME
 Backend notes from upstream interface documentation:
 - The XDG Desktop Portal Screenshot interface can request an Area target, but the documented options contain no rectangle coordinates. It is a user-driven selection and does not by itself meet saved-dimension reuse.
 - The first implementation called GNOME Shell's private `SelectArea()`/`ScreenshotArea()` methods. On the declared target (Ubuntu 24.04.4, GNOME Shell 46.0, Wayland), the user confirmed that `SelectArea` returns `org.freedesktop.DBus.Error.AccessDenied`; this backend was removed.
-- The current implementation uses the [XDG Desktop Portal Screenshot API](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html) to request a whole-screen screenshot under desktop permission. The local UI lets the user select coordinates on that returned image; platform-independent Pillow code crops the selection. The same saved image-pixel rectangle is reapplied to subsequent portal screenshots. The full-screen portal output is read and removed before the cropped result is saved.
+- The current implementation uses the [XDG Desktop Portal Screenshot API](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html) in interactive mode. GNOME displays its screenshot UI; the user chooses Selection, drags the region, and confirms. The portal returns the selected image, which the app saves directly. A prior implementation used `interactive=false`, causing GNOME to return the entire screen; this was the reason the user saw a full-screen result.
 - `grim -g` accepts an explicit region on compatible Wayland compositors; upstream examples emphasize Sway/wlroots. GNOME/Mutter compatibility is unverified.
 
-The portal-backed flow preserves the original saved-rectangle behavior, but obtains more screen content than the final crop. The GNOME permission prompt and temporary-file cleanup must be checked on the actual Ubuntu target; the implementation remains experimental until then.
+The native portal selection is the simplest supported path on GNOME Wayland. It does not expose a way to prefill or retrieve the selected rectangle's screen position, so app-controlled saved-rectangle reuse is not supported by this path. The flow remains experimental until tested on the actual Ubuntu target.
 
 Target-session test procedure:
 1. Record `lsb_release -ds`, `echo "$XDG_CURRENT_DESKTOP"`, `echo "$XDG_SESSION_TYPE"`, and `gnome-shell --version`.
-2. Launch the installed app and choose **Select area**. Approve the portal prompt. Confirm the app minimizes before the desktop image is taken and that the selector displays the returned screenshot.
-3. Select a known rectangle, capture it, and compare image content/dimensions with the selected area. Check that no uncropped full-screen PNG remains in `~/Pictures/Screenshots` or the selected output folder.
-4. Restart the app and capture the saved rectangle again. Confirm it reuses the coordinates without opening the area picker and creates a unique PNG.
-5. Test portal cancellation, local picker cancellation, changed screen dimensions, and out-of-bounds geometry; confirm no incomplete capture remains. Record exact results in the roadmap.
+2. Launch the app and choose **Select area**. Confirm GNOME's screenshot UI appears.
+3. Choose **Selection**, drag over a known area, and confirm. Verify the saved PNG contains only that selected area and has the expected dimensions.
+4. Capture a second area. Confirm it has a unique filename.
+5. Cancel GNOME's screenshot UI. Confirm no capture file was created, then record all results in the roadmap.
 
 Backend considerations:
 - X11 may allow more direct region selection integration.
-- Wayland GNOME restricts direct screen access. XDG Desktop Portal mediates screenshots but returns a whole-screen image in this design; the app temporarily handles that full image before cropping locally.
+- Wayland GNOME restricts direct screen access. The XDG Desktop Portal owns the native interactive screenshot and area-selection UI; use `interactive=true` so the result is the selected screenshot rather than a full-screen image.
 - `grim` can capture a specified region on compatible Wayland compositors, but do not assume it works on GNOME.
 - Investigate the user's actual session before choosing.
 
-Keep the portal adapter, local area selector, and image crop operation separate. Mocked tests cover image logic only; they do not prove portal consent or Ubuntu compatibility.
+Keep the portal adapter separate from output saving. Mocked tests do not prove portal UI behavior or Ubuntu compatibility.
 
 ## Merge algorithm
 Vertical: canvas width = maximum input width; canvas height = sum of heights.
 Horizontal: canvas width = sum of widths; canvas height = maximum input height.
 Place images in the displayed order with selected alignment. Preserve aspect ratio; never stretch. Use an explicit background policy for unused canvas area. PNG is the default output.
-
-## Persistence
-Store geometry/settings in the XDG config directory, not the repo or current working directory. Validate stored values on load.
 
 ## Errors and privacy
 Give actionable errors for unavailable backend, invalid images, cancelled capture, and unwritable output. No telemetry, uploads, or network calls. Never log screen contents.

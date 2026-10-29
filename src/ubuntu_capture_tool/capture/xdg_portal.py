@@ -32,7 +32,7 @@ class _Response(QObject):
 
 
 class XdgPortalScreenshotBackend:
-    """Capture a desktop frame through the consent-controlled screenshot portal."""
+    """Request an interactive screenshot through the desktop portal."""
 
     def __init__(
         self,
@@ -94,7 +94,7 @@ class XdgPortalScreenshotBackend:
         reply = interface.call(
             "Screenshot",
             parent_window,
-            {"handle_token": token, "interactive": False},
+            {"handle_token": token, "interactive": True},
         )
         if reply.type() == QDBusMessage.MessageType.ErrorMessage:
             self.connection.disconnect(
@@ -133,8 +133,8 @@ class XdgPortalScreenshotBackend:
         except OSError as exc:
             raise CaptureBackendError("Could not read the screenshot returned by the portal.") from exc
         finally:
-            # The portal creates this image for this request; remove its full-screen
-            # temporary output after loading it so only the chosen crop is retained.
+            # The portal creates this image for this request; remove its temporary
+            # output after reading it because the app writes its own unique copy.
             screenshot_path.unlink(missing_ok=True)
         if not image_data.startswith(b"\x89PNG\r\n\x1a\n"):
             raise CaptureBackendError("The screenshot portal returned a file that is not PNG.")

@@ -75,7 +75,7 @@ class FakeConnection:
 def test_portal_capture_reads_and_removes_temporary_full_screen_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    screenshot_path = tmp_path / "portal-full-screen.png"
+    screenshot_path = tmp_path / "portal-selected-area.png"
     screenshot_path.write_bytes(png_bytes())
     connection = FakeConnection()
 
@@ -83,7 +83,8 @@ def test_portal_capture_reads_and_removes_temporary_full_screen_file(
         def __init__(self, *_args) -> None:
             pass
 
-        def call(self, *_args):
+        def call(self, _method, _parent_window, options):
+            assert options["interactive"] is True
             assert connection.receiver is not None
             connection.receiver.receive(0, {"uri": screenshot_path.as_uri()})
             return FakeMessage()
@@ -120,7 +121,8 @@ def test_portal_cancel_response_is_reported_as_cancellation(
         def __init__(self, *_args) -> None:
             pass
 
-        def call(self, *_args):
+        def call(self, _method, _parent_window, options):
+            assert options["interactive"] is True
             connection.receiver.receive(1, {})
             return FakeMessage()
 
