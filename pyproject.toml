@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ubuntu-capture-tool"
 version = "0.1.0"
-description = "Local image combiner and, after target validation, Ubuntu area capture utility"
-readme = "ubuntu-capture-tool-planning-docs/README.md"
+description = "Ubuntu screenshot capture and image composition utility"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "Pillow>=10.0",
