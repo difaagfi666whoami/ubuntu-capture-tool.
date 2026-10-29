@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register Ubuntu Capture Tool in the current user's application menu."""
+"""Register Dipapipi Skrinsyun kustom in the current user's application menu."""
 
 import argparse
 from pathlib import Path
@@ -24,7 +24,7 @@ def main() -> int:
 
     desktop_file = install_desktop_launcher(project_root)
     print(f"Installed application launcher: {desktop_file}")
-    print("Open Show Applications, search for Ubuntu Capture Tool, then pin it to the Dock if desired.")
+    print("Open Show Applications, search for Dipapipi Skrinsyun kustom, then pin it to the Dock if desired.")
     return 0
 
 

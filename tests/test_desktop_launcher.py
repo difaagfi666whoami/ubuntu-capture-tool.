@@ -22,6 +22,7 @@ def test_installs_user_desktop_entry_and_icon(tmp_path: Path) -> None:
     assert f'Exec="{quoted_python}" -m ubuntu_capture_tool.app' in contents
     assert f"TryExec={python}" in contents
     assert f'TryExec="{python}"' not in contents
+    assert "Name=Dipapipi Skrinsyun kustom" in contents
     assert "Terminal=false" in contents
     assert "Icon=" in contents
     assert desktop_file.stat().st_mode & 0o111

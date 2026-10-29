@@ -1,4 +1,4 @@
-"""Ubuntu Capture Tool application package."""
+"""Dipapipi Skrinsyun kustom desktop application package."""
 
 __version__ = "0.1.0"
 

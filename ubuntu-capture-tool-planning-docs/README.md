@@ -1,4 +1,4 @@
-# Ubuntu Capture Tool
+# Dipapipi Skrinsyun kustom
 
 A small Ubuntu-focused productivity utility for repetitive screenshots and quick image composition.
 
@@ -86,7 +86,7 @@ python scripts/install_desktop_launcher.py
 ubuntu-capture-tool
 ```
 
-The one-time launcher installer adds **Ubuntu Capture Tool** to **Show Applications** with its app icon. Open it there and pin it to the Dock to launch it with one click. Re-run `python scripts/install_desktop_launcher.py` if the project folder or virtual environment moves.
+The one-time launcher installer adds **Dipapipi Skrinsyun kustom** to **Show Applications** with its app icon. Open it there and pin it to the Dock to launch it with one click. Re-run `python scripts/install_desktop_launcher.py` if the project folder or virtual environment moves.
 
 These are setup instructions for the Ubuntu target. On GNOME Wayland the app requests an interactive screenshot from the XDG screenshot portal. GNOME displays its screenshot UI; the user chooses a selection, drags over the desired area, and confirms. The portal returns the selected screenshot, which the app saves to the chosen capture folder. This interactive flow must be checked on the target PC.
 
@@ -107,7 +107,7 @@ Record the Ubuntu version, GNOME Shell version, display server, test output, and
 
 ### Launch from the application grid
 
-The one-time launcher installer adds **Ubuntu Capture Tool** to GNOME's **Show Applications** grid. Search for the app and open it; drag its icon to the Dock to keep it there. You can then start the program without opening Terminal.
+The one-time launcher installer adds **Dipapipi Skrinsyun kustom** to GNOME's **Show Applications** grid. Search for the app and open it; drag its icon to the Dock to keep it there. You can then start the program without opening Terminal.
 
 ## Using the image combiner
 

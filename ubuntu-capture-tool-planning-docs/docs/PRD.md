@@ -1,7 +1,7 @@
 # Product Requirements Document
 
 ## Summary
-An Ubuntu-only desktop utility for repetitive area screenshots and simple image composition. Working name: Ubuntu Capture Tool.
+An Ubuntu-only desktop utility for repetitive area screenshots and simple image composition. Product name: Dipapipi Skrinsyun kustom.
 
 ## User problems
 - Repeated screenshots require resizing the selection every time.

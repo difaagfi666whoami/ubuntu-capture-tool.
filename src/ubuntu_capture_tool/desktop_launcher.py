@@ -61,7 +61,7 @@ def install_desktop_launcher(
                 "[Desktop Entry]",
                 "Version=1.0",
                 "Type=Application",
-                "Name=Ubuntu Capture Tool",
+                "Name=Dipapipi Skrinsyun kustom",
                 "Comment=Capture selected screen areas and combine images",
                 f"Exec={_exec_argument(python)} -m ubuntu_capture_tool.app",
                 # TryExec is a single executable path, not an Exec command line;

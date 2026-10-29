@@ -31,7 +31,7 @@ from .image_merge import Alignment, ImageMergeError, MergeOptions, Orientation, 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Ubuntu Capture Tool")
+        self.setWindowTitle("Dipapipi Skrinsyun kustom")
         self.resize(900, 650)
         self._preview_pixmap: QPixmap | None = None
 

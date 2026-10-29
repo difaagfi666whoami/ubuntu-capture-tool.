@@ -37,6 +37,7 @@ def add_input(window: MainWindow, path: Path) -> None:
 
 
 def test_select_reorder_and_preview_images(window: MainWindow, tmp_path: Path) -> None:
+    assert window.windowTitle() == "Dipapipi Skrinsyun kustom"
     first = write_image(tmp_path / "first.png", (10, 20), (255, 0, 0))
     second = write_image(tmp_path / "second.png", (20, 10), (0, 0, 255))
     add_input(window, first)
