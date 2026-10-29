@@ -42,26 +42,26 @@ The project README records the intended test target as Ubuntu 24.04.4 LTS, GNOME
 
 Backend notes from upstream interface documentation:
 - The XDG Desktop Portal Screenshot interface can request an Area target, but the documented options contain no rectangle coordinates. It is a user-driven selection and does not by itself meet saved-dimension reuse.
-- GNOME Shell's `org.gnome.Shell.Screenshot.ScreenshotArea(x, y, width, height, ...)` accepts explicit geometry. This is the strongest candidate for GNOME Wayland, subject to verifying that the interface exists, is callable, and captures the intended pixels on Ubuntu 24.04.4. It is GNOME-specific and must not be treated as a stable cross-desktop API without further evidence.
-- GNOME Shell's screenshot interface also declares `SelectArea()`, which returns the chosen rectangle. The implementation calls this selector on first use or when the user chooses Select area, then calls `ScreenshotArea` for repeat captures using the saved rectangle. The upstream interface is documented at [GNOME Shell Screenshot D-Bus XML](https://github.com/GNOME/gnome-shell/blob/main/data/dbus-interfaces/org.gnome.Shell.Screenshot.xml). This is a private GNOME API and may differ by Shell release; the Ubuntu target test is required.
+- The first implementation called GNOME Shell's private `SelectArea()`/`ScreenshotArea()` methods. On the declared target (Ubuntu 24.04.4, GNOME Shell 46.0, Wayland), the user confirmed that `SelectArea` returns `org.freedesktop.DBus.Error.AccessDenied`; this backend was removed.
+- The current implementation uses the [XDG Desktop Portal Screenshot API](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html) to request a whole-screen screenshot under desktop permission. The local UI lets the user select coordinates on that returned image; platform-independent Pillow code crops the selection. The same saved image-pixel rectangle is reapplied to subsequent portal screenshots. The full-screen portal output is read and removed before the cropped result is saved.
 - `grim -g` accepts an explicit region on compatible Wayland compositors; upstream examples emphasize Sway/wlroots. GNOME/Mutter compatibility is unverified.
 
-The user approved implementing the GNOME candidate for target testing. It remains experimental: if its D-Bus methods are unavailable or unreliable, do not claim support; report the result and revisit the backend choice.
+The portal-backed flow preserves the original saved-rectangle behavior, but obtains more screen content than the final crop. The GNOME permission prompt and temporary-file cleanup must be checked on the actual Ubuntu target; the implementation remains experimental until then.
 
 Target-session test procedure:
 1. Record `lsb_release -ds`, `echo "$XDG_CURRENT_DESKTOP"`, `echo "$XDG_SESSION_TYPE"`, and `gnome-shell --version`.
-2. Inspect the session-bus interface with `gdbus introspect --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Screenshot` and confirm the `ScreenshotArea` signature.
-3. Call `gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Screenshot --method org.gnome.Shell.Screenshot.ScreenshotArea 0 0 320 240 false /tmp/uct-phase0-a.png`; inspect the method result and `file /tmp/uct-phase0-a.png` for the expected pixel dimensions.
-4. Call again with a different stored width/height and another unique path; confirm the second output dimensions match without opening a selection dialog.
-5. Test negative/out-of-bounds coordinates, cancellation behavior (if applicable), and output naming/overwrite handling. Record exact commands and observed results in the roadmap.
+2. Launch the installed app and choose **Select area**. Approve the portal prompt. Confirm the app minimizes before the desktop image is taken and that the selector displays the returned screenshot.
+3. Select a known rectangle, capture it, and compare image content/dimensions with the selected area. Check that no uncropped full-screen PNG remains in `~/Pictures/Screenshots` or the selected output folder.
+4. Restart the app and capture the saved rectangle again. Confirm it reuses the coordinates without opening the area picker and creates a unique PNG.
+5. Test portal cancellation, local picker cancellation, changed screen dimensions, and out-of-bounds geometry; confirm no incomplete capture remains. Record exact results in the roadmap.
 
 Backend considerations:
 - X11 may allow more direct region selection integration.
-- Wayland GNOME has stronger restrictions. XDG Desktop Portal can request area screenshots, but its selection UI may not accept a saved custom rectangle.
+- Wayland GNOME restricts direct screen access. XDG Desktop Portal mediates screenshots but returns a whole-screen image in this design; the app temporarily handles that full image before cropping locally.
 - `grim` can capture a specified region on compatible Wayland compositors, but do not assume it works on GNOME.
 - Investigate the user's actual session before choosing.
 
-Keep the real GNOME selector and screenshot calls separate behind the capture interface; do not substitute a fake flow. If the target session cannot honor saved geometry cleanly, report the limitation before claiming support.
+Keep the portal adapter, local area selector, and image crop operation separate. Mocked tests cover image logic only; they do not prove portal consent or Ubuntu compatibility.
 
 ## Merge algorithm
 Vertical: canvas width = maximum input width; canvas height = sum of heights.

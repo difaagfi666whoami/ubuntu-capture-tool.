@@ -24,22 +24,31 @@ class FakeCaptureBackend:
         self.rectangle = rectangle or CaptureRect(10, 20, 4, 3)
         self.cancel_selection = cancel_selection
         self.capture_error = capture_error
-        self.captured_rectangles: list[CaptureRect] = []
+        self.captured_frames = 0
 
-    def select_area(self) -> CaptureRect:
-        if self.cancel_selection:
-            raise CaptureCancelled
-        return self.rectangle
-
-    def capture(self, rectangle: CaptureRect) -> bytes:
+    def capture_screen(self) -> bytes:
         if self.capture_error is not None:
             raise self.capture_error
-        self.captured_rectangles.append(rectangle)
+        self.captured_frames += 1
         output = BytesIO()
-        Image.new("RGB", (rectangle.width, rectangle.height), (0, 120, 200)).save(
-            output, format="PNG"
-        )
+        Image.new("RGB", (200, 200), (0, 120, 200)).save(output, format="PNG")
         return output.getvalue()
+
+
+class FakeAreaSelector:
+    def __init__(self, _image_data: bytes, _parent=None, *, rectangle: CaptureRect) -> None:
+        self.rectangle = rectangle
+
+    def selected_rectangle(self) -> CaptureRect:
+        return self.rectangle
+
+
+class CancelledAreaSelector:
+    def __init__(self, _image_data: bytes, _parent=None) -> None:
+        pass
+
+    def selected_rectangle(self) -> CaptureRect:
+        raise CaptureCancelled
 
 
 @pytest.fixture(scope="module")
@@ -56,6 +65,9 @@ def test_select_area_then_capture_persists_geometry_and_saves_file(
         backend,
         geometry_store=store,
         output_directory=tmp_path / "captures",
+        area_selector_factory=lambda data, parent: FakeAreaSelector(
+            data, parent, rectangle=backend.rectangle
+        ),
     )
 
     panel.select_area()
@@ -65,7 +77,7 @@ def test_select_area_then_capture_persists_geometry_and_saves_file(
     panel.width_field.setValue(50)
     panel.capture_area()
 
-    assert backend.captured_rectangles == [CaptureRect(30, 40, 50, 60)]
+    assert backend.captured_frames == 2
     assert store.load() == CaptureRect(30, 40, 50, 60)
     files = list((tmp_path / "captures").glob("capture_*.png"))
     assert len(files) == 1
@@ -95,6 +107,7 @@ def test_cancelled_area_selection_creates_no_capture_file(
         FakeCaptureBackend(cancel_selection=True),
         geometry_store=store,
         output_directory=tmp_path / "captures",
+        area_selector_factory=CancelledAreaSelector,
     )
 
     panel.select_area()
@@ -114,7 +127,7 @@ def test_backend_capture_error_creates_no_partial_output(
     store = GeometryStore(tmp_path / "settings" / "capture.json")
     store.save(CaptureRect(0, 0, 10, 10))
     panel = CapturePanel(
-        FakeCaptureBackend(capture_error=CaptureBackendError("rectangle is outside the screen")),
+        FakeCaptureBackend(capture_error=CaptureBackendError("portal denied permission")),
         geometry_store=store,
         output_directory=output_directory,
     )
@@ -128,6 +141,6 @@ def test_backend_capture_error_creates_no_partial_output(
     panel.capture_area()
 
     assert not output_directory.exists()
-    assert messages == ["rectangle is outside the screen"]
+    assert messages == ["portal denied permission"]
     assert "Capture failed" in panel.status.text()
     panel.close()

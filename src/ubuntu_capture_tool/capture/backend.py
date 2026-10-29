@@ -29,11 +29,8 @@ class CaptureBackendError(RuntimeError):
 
 
 class CaptureBackend(Protocol):
-    """Platform adapter for choosing and capturing a screen rectangle."""
+    """Platform adapter for obtaining screenshot pixels from the desktop."""
 
-    def select_area(self) -> CaptureRect:
-        """Open the platform's area selector or raise CaptureCancelled."""
-
-    def capture(self, rectangle: CaptureRect) -> bytes:
-        """Capture an explicit rectangle or raise a documented capture error."""
+    def capture_screen(self) -> bytes:
+        """Return a PNG of the desktop, or raise a documented capture error."""
 

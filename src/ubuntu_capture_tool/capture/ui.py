@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Callable
 
+from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
@@ -18,9 +20,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .area_selector import ScreenAreaSelector
 from .backend import CaptureBackend, CaptureBackendError, CaptureCancelled, CaptureRect
-from .gnome_shell import GnomeShellScreenshotBackend
+from .crop import crop_png_to_rectangle
 from .output import default_capture_directory, save_capture_png
+from .xdg_portal import XdgPortalScreenshotBackend
 from ubuntu_capture_tool.settings.geometry_store import GeometryStore
 
 
@@ -34,13 +38,15 @@ class CapturePanel(QWidget):
         geometry_store: GeometryStore | None = None,
         output_directory: str | Path | None = None,
         detect_backend: bool = True,
+        area_selector_factory: Callable[..., ScreenAreaSelector] = ScreenAreaSelector,
     ) -> None:
         super().__init__()
+        self.area_selector_factory = area_selector_factory
         self.geometry_store = geometry_store or GeometryStore()
         self.output_directory = Path(output_directory) if output_directory else default_capture_directory()
         if backend is None and detect_backend:
             try:
-                backend = GnomeShellScreenshotBackend.from_current_session()
+                backend = XdgPortalScreenshotBackend.from_current_session()
             except CaptureBackendError as exc:
                 self.backend_message = str(exc)
         else:
@@ -48,7 +54,7 @@ class CapturePanel(QWidget):
         self.backend = backend
         if self.backend is not None:
             self.backend_message = (
-                "Experimental GNOME Wayland integration. Confirm this backend on the Ubuntu target before relying on it."
+                "GNOME's screenshot portal provides the full desktop image for local area selection and cropping."
             )
 
         self.x_field = self._integer_field(-100000, 100000)
@@ -99,7 +105,8 @@ class CapturePanel(QWidget):
         layout.addWidget(
             QLabel(
                 "Select a region once, then capture the saved rectangle again without resizing it. "
-                "You can edit its coordinates and dimensions before capturing."
+                "GNOME asks permission to provide a full-screen image; the app crops it locally and saves only the selected area. "
+                "You can edit coordinates and dimensions before capturing."
             )
         )
         layout.addLayout(geometry)
@@ -133,7 +140,8 @@ class CapturePanel(QWidget):
         if self.backend is None:
             return
         try:
-            rectangle = self.backend.select_area()
+            screen_image = self._capture_desktop_frame()
+            rectangle = self.area_selector_factory(screen_image, self).selected_rectangle()
             self.geometry_store.save(rectangle)
             self._set_rectangle(rectangle)
             self.capture_button.setEnabled(True)
@@ -150,7 +158,8 @@ class CapturePanel(QWidget):
             return
         try:
             rectangle = self._rectangle()
-            image_data = self.backend.capture(rectangle)
+            screen_image = self._capture_desktop_frame()
+            image_data = crop_png_to_rectangle(screen_image, rectangle)
             self.geometry_store.save(rectangle)
             saved_path = save_capture_png(image_data, self.output_field.text())
             self.status.setText(
@@ -169,6 +178,18 @@ class CapturePanel(QWidget):
         )
         if selected:
             self.output_field.setText(selected)
+
+    def _capture_desktop_frame(self) -> bytes:
+        """Hide this window so it is not included in the desktop image."""
+        window = self.window()
+        window.showMinimized()
+        QApplication.processEvents()
+        try:
+            return self.backend.capture_screen()
+        finally:
+            window.showNormal()
+            window.raise_()
+            window.activateWindow()
 
     def _show_error(self, error: Exception) -> None:
         self.status.setText(f"Capture failed: {error}")
