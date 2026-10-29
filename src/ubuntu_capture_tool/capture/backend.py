@@ -1,8 +1,4 @@
-"""Cross-platform contract for screenshot backends.
-
-No backend is approved or implemented until it has passed integration testing
-on the declared Ubuntu desktop session.
-"""
+"""Cross-platform contract for screenshot backends."""
 
 from __future__ import annotations
 
@@ -33,7 +29,10 @@ class CaptureBackendError(RuntimeError):
 
 
 class CaptureBackend(Protocol):
-    """Platform adapter returning PNG bytes for the requested screen region."""
+    """Platform adapter for choosing and capturing a screen rectangle."""
+
+    def select_area(self) -> CaptureRect:
+        """Open the platform's area selector or raise CaptureCancelled."""
 
     def capture(self, rectangle: CaptureRect) -> bytes:
         """Capture an explicit rectangle or raise a documented capture error."""

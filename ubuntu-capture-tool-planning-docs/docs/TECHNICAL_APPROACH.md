@@ -16,7 +16,7 @@ This stack is proposed, not final. Keep dependencies modest.
 - `tests/`: merge and settings/geometry tests
 
 Image merge must work independently of the screenshot backend.
-The platform-neutral capture contract lives in `src/ubuntu_capture_tool/capture/backend.py`. It accepts an explicit rectangle and returns PNG bytes; platform implementations remain intentionally absent until the Ubuntu feasibility test passes. `src/ubuntu_capture_tool/settings/geometry_store.py` atomically stores validated geometry under the XDG config directory. It is not connected to a capture flow yet; the chosen backend must validate screen bounds on the actual session.
+The platform-neutral capture contract lives in `src/ubuntu_capture_tool/capture/backend.py`. It selects a rectangle and captures it as PNG bytes. The experimental GNOME Shell implementation is isolated in `src/ubuntu_capture_tool/capture/gnome_shell.py`; the UI is in `src/ubuntu_capture_tool/capture/ui.py`. `src/ubuntu_capture_tool/settings/geometry_store.py` atomically stores validated geometry under the XDG config directory. The implementation is ready for target testing, but is not declared Ubuntu-compatible until the actual session checks pass.
 
 ## Cross-platform development and validation
 macOS is a development host; Ubuntu is the target runtime. Do not use macOS behavior as evidence for Ubuntu support.
@@ -37,15 +37,16 @@ echo "$XDG_SESSION_TYPE"
 echo "$XDG_CURRENT_DESKTOP"
 ```
 
-### Phase 0 findings (2026-10-29)
+### Phase 0 findings (2026-10-29; target testing still pending)
 The project README records the intended test target as Ubuntu 24.04.4 LTS, GNOME, Wayland. The available development host was macOS 26.6.2 (Darwin arm64), with no XDG/Wayland session variables and no Linux screenshot utilities installed. These facts mean the target backend could not be exercised in this run.
 
 Backend notes from upstream interface documentation:
 - The XDG Desktop Portal Screenshot interface can request an Area target, but the documented options contain no rectangle coordinates. It is a user-driven selection and does not by itself meet saved-dimension reuse.
 - GNOME Shell's `org.gnome.Shell.Screenshot.ScreenshotArea(x, y, width, height, ...)` accepts explicit geometry. This is the strongest candidate for GNOME Wayland, subject to verifying that the interface exists, is callable, and captures the intended pixels on Ubuntu 24.04.4. It is GNOME-specific and must not be treated as a stable cross-desktop API without further evidence.
+- GNOME Shell's screenshot interface also declares `SelectArea()`, which returns the chosen rectangle. The implementation calls this selector on first use or when the user chooses Select area, then calls `ScreenshotArea` for repeat captures using the saved rectangle. The upstream interface is documented at [GNOME Shell Screenshot D-Bus XML](https://github.com/GNOME/gnome-shell/blob/main/data/dbus-interfaces/org.gnome.Shell.Screenshot.xml). This is a private GNOME API and may differ by Shell release; the Ubuntu target test is required.
 - `grim -g` accepts an explicit region on compatible Wayland compositors; upstream examples emphasize Sway/wlroots. GNOME/Mutter compatibility is unverified.
 
-Provisional recommendation: on the target machine, test GNOME Shell's explicit-area D-Bus method first. If it works reliably, use it behind a small GNOME-specific backend and keep image merging independent. If it is unavailable or unreliable, present the user with the documented choice to defer capture or approve a generic interactive selection that cannot promise saved dimensions. Do not implement the capture UI or claim Wayland support before this test.
+The user approved implementing the GNOME candidate for target testing. It remains experimental: if its D-Bus methods are unavailable or unreliable, do not claim support; report the result and revisit the backend choice.
 
 Target-session test procedure:
 1. Record `lsb_release -ds`, `echo "$XDG_CURRENT_DESKTOP"`, `echo "$XDG_SESSION_TYPE"`, and `gnome-shell --version`.
@@ -60,7 +61,7 @@ Backend considerations:
 - `grim` can capture a specified region on compatible Wayland compositors, but do not assume it works on GNOME.
 - Investigate the user's actual session before choosing.
 
-Do not implement a fake capture flow. If the target session cannot honor saved geometry cleanly, explain options and get approval to limit support or defer capture.
+Keep the real GNOME selector and screenshot calls separate behind the capture interface; do not substitute a fake flow. If the target session cannot honor saved geometry cleanly, report the limitation before claiming support.
 
 ## Merge algorithm
 Vertical: canvas width = maximum input width; canvas height = sum of heights.

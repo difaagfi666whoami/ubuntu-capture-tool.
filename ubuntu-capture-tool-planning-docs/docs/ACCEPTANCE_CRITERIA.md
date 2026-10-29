@@ -3,6 +3,7 @@
 Check items only after testing and recording evidence.
 
 ## Area capture
+Capture code is implemented behind the platform backend interface, but the GNOME backend remains experimental. Do not check these criteria until the actual Ubuntu desktop checks in README.md pass.
 - [ ] AC-CAP-01: Capture can be invoked from the app.
 - [ ] AC-CAP-02: Image is saved successfully.
 - [ ] AC-CAP-03: Last width/height persist after restart.

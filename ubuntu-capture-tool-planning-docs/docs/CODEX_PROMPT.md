@@ -1,5 +1,7 @@
 # Codex Prompt — Initial Task
 
+> Current status: the platform-independent image combiner is implemented and the user reports it runs on Ubuntu. An experimental GNOME Shell capture candidate is now implemented; use the current roadmap and do not claim capture support until the Ubuntu desktop checks pass.
+
 Paste this prompt into Codex after adding these documents to the repository.
 
 ---

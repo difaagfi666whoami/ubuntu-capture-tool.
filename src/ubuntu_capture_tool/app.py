@@ -19,10 +19,12 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from .capture.ui import CapturePanel
 from .image_merge import Alignment, ImageMergeError, MergeOptions, Orientation, compose_images, save_png
 
 
@@ -85,8 +87,14 @@ class MainWindow(QMainWindow):
 
         root = QWidget()
         root.setLayout(layout)
-        self.setCentralWidget(root)
-        self.statusBar().showMessage("Images are processed locally. No screenshot backend is enabled yet.")
+        self.capture_panel = CapturePanel()
+        self.tabs = QTabWidget()
+        self.tabs.addTab(root, "Image combiner")
+        self.tabs.addTab(self.capture_panel, "Area capture")
+        self.setCentralWidget(self.tabs)
+        self.statusBar().showMessage(
+            "Processing stays local. GNOME area capture is experimental until tested on the Ubuntu target."
+        )
 
     def add_images(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(

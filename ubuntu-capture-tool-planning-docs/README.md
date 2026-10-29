@@ -41,7 +41,7 @@ The currently declared target is Ubuntu 24.04.4 LTS, GNOME, Wayland (from the pr
 
 ## Current implementation
 
-The current application includes local vertical/horizontal image composition, ordered image selection, alignment, preview, and PNG export. Image processing is separate from screenshot integration. A capture backend interface and validated rectangle settings store exist, but no screenshot backend or capture UI is enabled; the settings store is not wired into the app until Phase 0 passes on the Ubuntu PC.
+The current application includes local vertical/horizontal image composition, ordered image selection, alignment, preview, and PNG export. It also includes an experimental GNOME Shell area-capture backend, area selector controls, and persisted rectangle settings. The screenshot backend has not yet been validated on the declared Ubuntu PC; do not treat mocked tests as proof of desktop compatibility.
 
 ## Setup and run
 
@@ -57,6 +57,14 @@ python -m pip install -e '.[dev]'
 ubuntu-capture-tool
 ```
 
+To update an existing clone when a new commit is published:
+
+```bash
+git pull origin main
+source .venv/bin/activate
+python -m pip install .
+```
+
 Run unit tests with:
 
 ```bash
@@ -69,7 +77,7 @@ Install Ubuntu's Python and Qt runtime libraries:
 
 ```bash
 sudo apt update
-sudo apt install python3 python3-venv python3-pip libgl1 libegl1
+sudo apt install python3 python3-venv python3-pip libgl1 libegl1 libglib2.0-bin
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -77,7 +85,7 @@ python -m pip install .
 ubuntu-capture-tool
 ```
 
-The Ubuntu commands are setup guidance and have not yet been tested on the target PC. Screenshot integration has no runtime dependencies yet because no capture backend is implemented.
+These are setup instructions for the Ubuntu target. The experimental capture backend uses GNOME Shell's session-bus screenshot interface through `gdbus`; it requires a GNOME Wayland session and the `gdbus` command. Target compatibility remains unverified until the manual checks below pass.
 
 ### Ubuntu test run
 
@@ -104,6 +112,29 @@ Record the Ubuntu version, GNOME Shell version, display server, test output, and
 
 The composition canvas fills unused space with white. Images keep their original pixel dimensions and are not stretched.
 
+## Using area capture (experimental)
+
+Area capture is intended for the declared Ubuntu GNOME Wayland target and is not available on macOS or other desktop sessions.
+
+1. Open the **Area capture** tab and choose **Select area**. GNOME Shell opens its native area selector.
+2. The selected coordinates and dimensions are saved in `~/.config/ubuntu-capture-tool/capture-geometry.json`. You can edit the X, Y, Width, and Height fields before capturing.
+3. Choose **Capture saved area** to capture that exact rectangle. Repeat captures reuse the saved geometry without opening the selector.
+4. Captures are written as uniquely named PNG files in `~/Pictures` (or the home folder if Pictures does not exist). Choose another folder with **Choose folder**.
+5. Cancel the native area selector to return without creating a screenshot. If capture fails, the app displays the GNOME error and creates no output file.
+
+### Ubuntu desktop validation still required
+
+The project maintainer must verify on the actual Ubuntu PC:
+
+- Record `lsb_release -ds`, `gnome-shell --version`, `echo "$XDG_CURRENT_DESKTOP"`, and `echo "$XDG_SESSION_TYPE"`.
+- Select and capture a known small area; confirm the image opens and has the expected content and dimensions.
+- Restart the app; confirm the prior coordinates and dimensions are restored.
+- Capture the same saved rectangle twice; confirm both outputs are valid and have different filenames.
+- Cancel the area selector and confirm no screenshot file appears.
+- Try an invalid or out-of-bounds rectangle; confirm an actionable error appears and no partial output is left.
+
+The GNOME Shell D-Bus interface documents both interactive `SelectArea` and explicit-rectangle `ScreenshotArea(x, y, width, height, ...)`. The backend is still experimental until these calls pass on the target session. See the [GNOME Shell screenshot interface](https://github.com/GNOME/gnome-shell/blob/main/data/dbus-interfaces/org.gnome.Shell.Screenshot.xml).
+
 ## Uninstall
 
 Remove the virtual environment created in the repository:
@@ -119,4 +150,4 @@ If the package was installed into a shared Python environment instead, uninstall
 
 - The merge tool reads source images and writes a new PNG; it does not modify source files.
 - Existing export files are never replaced without an explicit confirmation.
-- Screen capture is not available yet. Do not treat the macOS development host, mocks, or this documentation as Ubuntu desktop compatibility evidence.
+- Screen capture code is present, but remains experimental until manual checks pass on Ubuntu GNOME Wayland. Do not treat the macOS development host, mocks, or this documentation as Ubuntu desktop compatibility evidence.
