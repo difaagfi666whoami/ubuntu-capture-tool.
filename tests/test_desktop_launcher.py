@@ -20,8 +20,11 @@ def test_installs_user_desktop_entry_and_icon(tmp_path: Path) -> None:
     assert desktop_file == tmp_path / "user data/applications/ubuntu-capture-tool.desktop"
     quoted_python = str(python).replace("$", "\\$")
     assert f'Exec="{quoted_python}" -m ubuntu_capture_tool.app' in contents
+    assert f"TryExec={python}" in contents
+    assert f'TryExec="{python}"' not in contents
     assert "Terminal=false" in contents
     assert "Icon=" in contents
+    assert desktop_file.stat().st_mode & 0o111
     installed_icon = tmp_path / "user data/icons/hicolor/scalable/apps/ubuntu-capture-tool.svg"
     assert installed_icon.read_text(encoding="utf-8") == "<svg/>"
 

@@ -64,7 +64,10 @@ def install_desktop_launcher(
                 "Name=Ubuntu Capture Tool",
                 "Comment=Capture selected screen areas and combine images",
                 f"Exec={_exec_argument(python)} -m ubuntu_capture_tool.app",
-                f"TryExec={_exec_argument(python)}",
+                # TryExec is a single executable path, not an Exec command line;
+                # quoting it makes the quote characters part of the path and
+                # causes GNOME to discard the application entry.
+                f"TryExec={python}",
                 f"Icon={icon_path}",
                 "Terminal=false",
                 "Categories=Graphics;Utility;",
@@ -74,6 +77,7 @@ def install_desktop_launcher(
         ),
         encoding="utf-8",
     )
+    desktop_file.chmod(0o755)
     return desktop_file
 
 
