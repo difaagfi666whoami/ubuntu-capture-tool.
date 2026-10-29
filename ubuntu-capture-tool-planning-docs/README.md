@@ -82,8 +82,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install .
+python scripts/install_desktop_launcher.py
 ubuntu-capture-tool
 ```
+
+The one-time launcher installer adds **Ubuntu Capture Tool** to **Show Applications** with its app icon. Open it there and pin it to the Dock to launch it with one click. Re-run `python scripts/install_desktop_launcher.py` if the project folder or virtual environment moves.
 
 These are setup instructions for the Ubuntu target. On GNOME Wayland the app requests an interactive screenshot from the XDG screenshot portal. GNOME displays its screenshot UI; the user chooses a selection, drags over the desired area, and confirms. The portal returns the selected screenshot, which the app saves to the chosen capture folder. This interactive flow must be checked on the target PC.
 
@@ -101,6 +104,10 @@ ubuntu-capture-tool
 ```
 
 Record the Ubuntu version, GNOME Shell version, display server, test output, and manual UI results in the roadmap. A successful unit test run does not establish screenshot compatibility.
+
+### Launch from the application grid
+
+The one-time launcher installer adds **Ubuntu Capture Tool** to GNOME's **Show Applications** grid. Search for the app and open it; drag its icon to the Dock to keep it there. You can then start the program without opening Terminal.
 
 ## Using the image combiner
 
@@ -137,9 +144,11 @@ GNOME restricts access to its private Shell screenshot interface. The app now us
 
 ## Uninstall
 
-Remove the virtual environment created in the repository:
+Remove the launcher first while the project environment is still installed, then remove the virtual environment:
 
 ```bash
+source .venv/bin/activate
+python scripts/install_desktop_launcher.py --uninstall
 deactivate
 rm -rf .venv
 ```

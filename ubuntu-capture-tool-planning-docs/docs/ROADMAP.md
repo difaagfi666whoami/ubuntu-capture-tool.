@@ -52,6 +52,7 @@ Exit condition: target compatibility remains gated on P0.2/P0.3.
 
 ## Phase 4 — Release
 - [x] P4.1 Add package launcher entry point.
+- [x] P4.1a Add a per-user GNOME application-menu launcher and app icon for one-click startup.
 - [ ] P4.2 Test install/uninstall instructions.
 - [ ] P4.3 Add real app screenshots.
 - [x] P4.4 Document limitations.
@@ -64,6 +65,7 @@ Exit condition: target compatibility remains gated on P0.2/P0.3.
 - 2026-10-29: Added experimental GNOME Shell area capture tab/backend, cancellation and output handling, plus mocked backend/UI tests. User reports that the image combiner works on the Ubuntu PC; capture integration is not yet tested there.
 - 2026-10-29: User confirmed Ubuntu 24.04.4 LTS, GNOME Shell 46.0, Wayland. The private GNOME Shell `SelectArea` D-Bus method returned `AccessDenied`. Replaced that candidate with XDG Portal full-screen capture plus a local selector/crop flow to preserve saved rectangle reuse; Ubuntu portal integration testing is still pending.
 - 2026-10-29: User reported that the portal replacement showed no area selection and produced a full-screen image. The cause was `interactive=false`. Switched to GNOME's interactive screenshot UI, removed the separate local picker and geometry controls, and saves the selected image returned by the portal directly. Ubuntu retest is pending.
+- 2026-10-29: Added a per-user GNOME application launcher and app icon with install/remove commands. Automated launcher tests pass; clicking it in Ubuntu's application grid still needs a target check.
 
 ## Implementation validation evidence
 - Earlier unit-test runs are historical evidence only; see the latest run below after the interactive portal change.
@@ -72,7 +74,7 @@ Exit condition: target compatibility remains gated on P0.2/P0.3.
 - PySide6 UI tests cover multi-file selection handling, reordering, preview updates, useful invalid-input feedback, PNG export, explicit overwrite confirmation, and source-file protection.
 - Merge unit tests cover vertical/horizontal order and dimensions, start/center/end alignment, invalid input, PNG output, overwrite refusal, atomic output replacement, and source-file preservation.
 - UI tests cover direct saving of the image returned by the portal, cancellation, and safe errors. Portal tests assert that the request is interactive and verify temporary-file cleanup. They do not demonstrate real GNOME compatibility.
-- Latest unit-test result: `python3 -m pytest -q`: 20 passed after simplifying area capture to GNOME's interactive screenshot UI.
+- Latest unit-test result: `python3 -m pytest -q`: 24 passed after adding desktop-launcher install/remove support.
 - Remaining: install the interactive portal update on Ubuntu; confirm GNOME's selection UI appears, returns area-only output, supports cancellation, and saves unique files. Then record actual results and revisit capture acceptance criteria.
 
 ## Decisions

@@ -27,6 +27,7 @@ Capture code uses GNOME's interactive screenshot portal and remains experimental
 - [x] AC-MRG-10: Source files remain unchanged. Source-byte preservation is unit-tested on macOS.
 
 ## Quality/release
+- [ ] AC-QA-06: User can launch the app from GNOME's application grid without opening a terminal (manual Ubuntu check pending).
 - [x] AC-QA-01: Tests cover order, dimensions, alignment, and invalid input.
 - [ ] AC-QA-02: Documented launch works on test Ubuntu setup.
 - [x] AC-QA-03: No network/telemetry. Current implementation has no network or telemetry code paths.
