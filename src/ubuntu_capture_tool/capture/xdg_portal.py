@@ -6,7 +6,7 @@ import os
 import uuid
 from pathlib import Path
 
-from PySide6.QtCore import QEventLoop, QObject, QTimer, QUrl, Slot
+from PySide6.QtCore import QEventLoop, QObject, QTimer, QUrl, SLOT, Slot
 from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusMessage
 
 from .backend import CaptureBackendError, CaptureCancelled
@@ -68,10 +68,19 @@ class XdgPortalScreenshotBackend:
         loop = QEventLoop()
         response = _Response(loop)
         connected = self.connection.connect(
-            PORTAL, request_path, REQUEST_INTERFACE, "Response", response, "receive"
+            PORTAL,
+            request_path,
+            REQUEST_INTERFACE,
+            "Response",
+            response,
+            SLOT("receive(uint,QVariantMap)"),
         )
         if not connected:
-            raise CaptureBackendError("Could not listen for the screenshot portal response.")
+            error = self.connection.lastError()
+            detail = error.message() if error.isValid() else "Qt D-Bus rejected the signal connection."
+            raise CaptureBackendError(
+                f"Could not listen for the screenshot portal response: {detail}"
+            )
 
         timer = QTimer()
         timer.setSingleShot(True)
@@ -89,13 +98,23 @@ class XdgPortalScreenshotBackend:
         )
         if reply.type() == QDBusMessage.MessageType.ErrorMessage:
             self.connection.disconnect(
-                PORTAL, request_path, REQUEST_INTERFACE, "Response", response, "receive"
+                PORTAL,
+                request_path,
+                REQUEST_INTERFACE,
+                "Response",
+                response,
+                SLOT("receive(uint,QVariantMap)"),
             )
             raise CaptureBackendError(f"Screenshot portal request failed: {reply.errorMessage()}")
         loop.exec()
         timer.stop()
         self.connection.disconnect(
-            PORTAL, request_path, REQUEST_INTERFACE, "Response", response, "receive"
+            PORTAL,
+            request_path,
+            REQUEST_INTERFACE,
+            "Response",
+            response,
+            SLOT("receive(uint,QVariantMap)"),
         )
 
         if response.status is None:

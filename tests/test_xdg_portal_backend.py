@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import subprocess
 from io import BytesIO
 from pathlib import Path
 
@@ -57,12 +56,16 @@ class FakeMessage:
 class FakeConnection:
     def __init__(self) -> None:
         self.receiver = None
+        self.signal_path = None
+        self.slot = None
 
     def baseService(self) -> str:
         return ":1.42"
 
-    def connect(self, _service, _path, _interface, _signal, receiver, _slot) -> bool:
+    def connect(self, _service, path, _interface, _signal, receiver, slot) -> bool:
         self.receiver = receiver
+        self.signal_path = path
+        self.slot = slot
         return True
 
     def disconnect(self, *_args) -> bool:
@@ -101,6 +104,10 @@ def test_portal_capture_reads_and_removes_temporary_full_screen_file(
     result = XdgPortalScreenshotBackend(connection=connection).capture_screen()
 
     assert result == png_bytes()
+    assert connection.signal_path.startswith(
+        "/org/freedesktop/portal/desktop/request/1_42/"
+    )
+    assert connection.slot == "1receive(uint,QVariantMap)"
     assert not screenshot_path.exists()
 
 
