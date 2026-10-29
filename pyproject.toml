@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ubuntu-capture-tool"
+version = "0.1.0"
+description = "Local image combiner and, after target validation, Ubuntu area capture utility"
+readme = "ubuntu-capture-tool-planning-docs/README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+    "PySide6>=6.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+ubuntu-capture-tool = "ubuntu_capture_tool.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
