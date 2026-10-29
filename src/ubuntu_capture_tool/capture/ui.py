@@ -33,6 +33,7 @@ class CapturePanel(QWidget):
     ) -> None:
         super().__init__()
         self.output_directory = Path(output_directory) if output_directory else default_capture_directory()
+        self.backend_message = ""
         if backend is None and detect_backend:
             try:
                 backend = XdgPortalScreenshotBackend.from_current_session()

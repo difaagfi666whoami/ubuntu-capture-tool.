@@ -58,6 +58,14 @@ def test_area_selection_saves_portal_result_directly(qt_app: QApplication, tmp_p
     panel.close()
 
 
+def test_capture_panel_starts_when_backend_detection_is_disabled(qt_app: QApplication) -> None:
+    panel = CapturePanel(detect_backend=False)
+
+    assert not panel.select_button.isEnabled()
+    assert panel.status.text() == ""
+    panel.close()
+
+
 def test_cancelled_area_selection_creates_no_capture_file(
     qt_app: QApplication, tmp_path: Path
 ) -> None:
